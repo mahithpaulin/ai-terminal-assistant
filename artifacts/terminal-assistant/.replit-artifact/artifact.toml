@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "AI Terminal Assistant"
+version = "1.0.0"
+id = "artifacts/terminal-assistant"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23459
+
+[services.development]
+run = "pnpm --filter @workspace/terminal-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/terminal-assistant", "run", "build" ]
+publicDir = "artifacts/terminal-assistant/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23459"
+BASE_PATH = "/"

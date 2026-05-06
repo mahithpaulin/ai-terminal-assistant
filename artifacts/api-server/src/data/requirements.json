@@ -1,0 +1,33 @@
+{
+  "setup_node_project": [
+    "check_node_installed",
+    "init_project",
+    "install_dependencies"
+  ],
+  "setup_python_project": [
+    "check_python_installed",
+    "create_virtualenv",
+    "install_requirements"
+  ],
+  "setup_git": [
+    "check_git_installed",
+    "git_init",
+    "create_gitignore"
+  ],
+  "deploy_docker": [
+    "check_docker_installed",
+    "build_image",
+    "run_container"
+  ],
+  "setup_react_app": [
+    "check_node_installed",
+    "check_npm_installed",
+    "create_react_app",
+    "install_dependencies"
+  ],
+  "setup_database": [
+    "check_db_driver_installed",
+    "configure_connection",
+    "run_migrations"
+  ]
+}

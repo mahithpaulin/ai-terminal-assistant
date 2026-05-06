@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AI Terminal Assistant API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: terminal
+    description: Terminal operations
+  - name: session
+    description: Session management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +27,205 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /terminal/api-key:
+    post:
+      operationId: setApiKey
+      tags: [session]
+      summary: Set OpenAI API key for the session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetApiKeyBody"
+      responses:
+        "200":
+          description: API key validated and stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyStatus"
+    get:
+      operationId: getApiKeyStatus
+      tags: [session]
+      summary: Check if API key is set
+      responses:
+        "200":
+          description: API key status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyStatus"
+
+  /terminal/chat:
+    post:
+      operationId: chat
+      tags: [terminal]
+      summary: Send a natural language message and get AI response with command
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatBody"
+      responses:
+        "200":
+          description: AI response with command suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+
+  /terminal/execute:
+    post:
+      operationId: executeCommand
+      tags: [terminal]
+      summary: Execute a shell command after user confirmation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteBody"
+      responses:
+        "200":
+          description: Command execution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecuteResult"
+
+  /terminal/explain:
+    post:
+      operationId: explainCommand
+      tags: [terminal]
+      summary: Explain what a shell command does
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainBody"
+      responses:
+        "200":
+          description: Command explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplainResponse"
+
+  /terminal/system-check:
+    post:
+      operationId: systemCheck
+      tags: [terminal]
+      summary: Check system requirements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemCheckBody"
+      responses:
+        "200":
+          description: System check results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemCheckResponse"
+
+  /terminal/context:
+    get:
+      operationId: getContext
+      tags: [terminal]
+      summary: Get current working directory and project context
+      responses:
+        "200":
+          description: Current project context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContextResponse"
+
+  /terminal/history:
+    get:
+      operationId: getHistory
+      tags: [terminal]
+      summary: Get command history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Command history list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryResponse"
+    delete:
+      operationId: clearHistory
+      tags: [terminal]
+      summary: Clear command history
+      responses:
+        "200":
+          description: History cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClearHistoryResponse"
+
+  /terminal/requirements:
+    get:
+      operationId: getRequirements
+      tags: [terminal]
+      summary: Get all task requirements definitions
+      responses:
+        "200":
+          description: Requirements config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequirementsResponse"
+    post:
+      operationId: addRequirement
+      tags: [terminal]
+      summary: Add or update a task requirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddRequirementBody"
+      responses:
+        "200":
+          description: Requirement added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequirementsResponse"
+
+  /terminal/fix-error:
+    post:
+      operationId: fixError
+      tags: [terminal]
+      summary: Get AI suggestions to fix a command error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FixErrorBody"
+      responses:
+        "200":
+          description: Error fix suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +233,293 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    SetApiKeyBody:
+      type: object
+      properties:
+        apiKey:
+          type: string
+      required: [apiKey]
+
+    ApiKeyStatus:
+      type: object
+      properties:
+        hasKey:
+          type: boolean
+        valid:
+          type: boolean
+        message:
+          type: string
+      required: [hasKey, valid]
+
+    ChatBody:
+      type: object
+      properties:
+        message:
+          type: string
+        sessionId:
+          type: string
+        dryRun:
+          type: boolean
+          default: false
+        context:
+          type: object
+          properties:
+            cwd:
+              type: string
+            projectFiles:
+              type: array
+              items:
+                type: string
+          additionalProperties: true
+      required: [message]
+
+    SuggestedCommand:
+      type: object
+      properties:
+        command:
+          type: string
+        explanation:
+          type: string
+        isDangerous:
+          type: boolean
+        dangerWarning:
+          type: string
+        requiresConfirmation:
+          type: boolean
+      required: [command, explanation, isDangerous, requiresConfirmation]
+
+    ChatResponse:
+      type: object
+      properties:
+        intent:
+          type: string
+        response:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedCommand"
+        requirementsCheck:
+          type: object
+          properties:
+            satisfied:
+              type: boolean
+            missing:
+              type: array
+              items:
+                type: string
+          additionalProperties: true
+        historyId:
+          type: integer
+      required: [intent, response, commands]
+
+    ExecuteBody:
+      type: object
+      properties:
+        command:
+          type: string
+        historyId:
+          type: integer
+        confirmed:
+          type: boolean
+          default: false
+      required: [command, confirmed]
+
+    ExecuteResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exitCode:
+          type: integer
+        durationMs:
+          type: integer
+      required: [success, stdout, stderr, exitCode]
+
+    ExplainBody:
+      type: object
+      properties:
+        command:
+          type: string
+        mode:
+          type: string
+          enum: [brief, detailed, beginner]
+          default: brief
+      required: [command]
+
+    ExplainResponse:
+      type: object
+      properties:
+        command:
+          type: string
+        explanation:
+          type: string
+        flags:
+          type: array
+          items:
+            type: object
+            properties:
+              flag:
+                type: string
+              description:
+                type: string
+            required: [flag, description]
+        isDangerous:
+          type: boolean
+        dangerWarning:
+          type: string
+      required: [command, explanation, flags, isDangerous]
+
+    SystemCheckBody:
+      type: object
+      properties:
+        checks:
+          type: array
+          items:
+            type: string
+          description: List of checks to run (node, git, python, docker, etc.)
+      required: [checks]
+
+    SystemCheckItem:
+      type: object
+      properties:
+        name:
+          type: string
+        installed:
+          type: boolean
+        version:
+          type: string
+        path:
+          type: string
+        message:
+          type: string
+      required: [name, installed]
+
+    SystemCheckResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemCheckItem"
+        cwd:
+          type: string
+      required: [results, cwd]
+
+    ContextResponse:
+      type: object
+      properties:
+        cwd:
+          type: string
+        projectFiles:
+          type: array
+          items:
+            type: string
+        projectType:
+          type: string
+        packageJson:
+          type: object
+          additionalProperties: true
+        requirementsTxt:
+          type: boolean
+        gitInitialized:
+          type: boolean
+        nodeVersion:
+          type: string
+      required: [cwd, projectFiles, gitInitialized]
+
+    HistoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        input:
+          type: string
+        intent:
+          type: string
+        command:
+          type: string
+        explanation:
+          type: string
+        executed:
+          type: boolean
+        success:
+          type: boolean
+        output:
+          type: string
+        createdAt:
+          type: string
+      required: [id, input, executed, createdAt]
+
+    HistoryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryItem"
+        total:
+          type: integer
+      required: [items, total]
+
+    ClearHistoryResponse:
+      type: object
+      properties:
+        deleted:
+          type: integer
+      required: [deleted]
+
+    RequirementsResponse:
+      type: object
+      properties:
+        requirements:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required: [requirements]
+
+    AddRequirementBody:
+      type: object
+      properties:
+        taskName:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+      required: [taskName, steps]
+
+    FixErrorBody:
+      type: object
+      properties:
+        command:
+          type: string
+        stderr:
+          type: string
+        exitCode:
+          type: integer
+        context:
+          type: object
+          additionalProperties: true
+      required: [command, stderr]
+
+    FixErrorResponse:
+      type: object
+      properties:
+        explanation:
+          type: string
+        suggestedFix:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedCommand"
+      required: [explanation, suggestedFix, commands]
