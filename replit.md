@@ -59,11 +59,20 @@ A full-stack AI-powered terminal assistant with a CLI-style dark interface where
 - Command history stored in PostgreSQL, browsable from sidebar
 - Requirements engine: JSON-defined task workflows, extensible via API
 
+## GitHub Auto-Sync
+
+- Required secret: `GITHUB_TOKEN` — GitHub Personal Access Token with `repo` scope
+- Target repo: `mahithpaulin/ai-terminal-assistant` (Replit is the source of truth)
+- Sync triggers: (1) after every Replit task merge via `postMerge` hook, (2) after every git commit via `.git/hooks/post-commit` (installed by the post-merge script)
+- Sync script: `scripts/sync-to-github.sh` — only syncs when on `main` branch; uses `--force-with-lease` to prevent silent overwrites of unknown remote changes
+- If sync fails: check that `GITHUB_TOKEN` secret is set and has `repo` push access; the post-commit hook uses `|| true` so a sync failure never blocks the commit
+
 ## Gotchas
 
 - After any OpenAPI spec change, run codegen AND manually remove the `export * from "./generated/types"` line from `lib/api-zod/src/index.ts` (Orval regenerates it with duplicate exports)
 - The codegen script (`pnpm --filter @workspace/api-spec run codegen`) fails if `lib/api-zod/src/index.ts` has both barrel exports — run `orval` alone, fix index.ts, then `typecheck:libs`
 - Command execution runs in the server process's working directory (the project root), not the user's machine
+- `.git/hooks/post-commit` is re-installed on every post-merge run — this is intentional so the hook is never lost after a fresh clone or environment reset
 
 ## Pointers
 

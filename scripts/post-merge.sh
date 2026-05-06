@@ -4,18 +4,15 @@ set -e
 pnpm install --frozen-lockfile
 pnpm --filter db push
 
-if [ -n "$GITHUB_TOKEN" ]; then
-  GITHUB_REPO="mahithpaulin/ai-terminal-assistant"
-  GITHUB_REMOTE_URL="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git"
+HOOK_TARGET=".git/hooks/post-commit"
+HOOK_SCRIPT='#!/bin/bash
+SCRIPT_DIR="$(git rev-parse --show-toplevel)/scripts"
+if [ -f "$SCRIPT_DIR/sync-to-github.sh" ]; then
+  bash "$SCRIPT_DIR/sync-to-github.sh" || true
+fi'
 
-  git remote remove github 2>/dev/null || true
-  git remote add github "$GITHUB_REMOTE_URL"
+echo "$HOOK_SCRIPT" > "$HOOK_TARGET"
+chmod +x "$HOOK_TARGET"
+echo "Installed post-commit hook at $HOOK_TARGET"
 
-  git config user.email "replit-agent@replit.com"
-  git config user.name "Replit Agent"
-
-  git push github HEAD:main --force
-  echo "Pushed to GitHub: ${GITHUB_REPO}"
-else
-  echo "GITHUB_TOKEN not set — skipping GitHub sync"
-fi
+bash scripts/sync-to-github.sh
