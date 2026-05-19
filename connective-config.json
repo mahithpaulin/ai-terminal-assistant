@@ -1,0 +1,1 @@
+{"network": {"agent_runtime": "http://agent-runtime:8001", "awe_engine": "http://awe-engine:8000", "myapp": "http://myapp:5000"}}
